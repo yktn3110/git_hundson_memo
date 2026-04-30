@@ -1,0 +1,51 @@
+# Gitハンズオン研修：実践マニュアル（共有フォルダ運用版）
+
+本研修では、GitHub等の外部サービスを使わず、**社内の共有フォルダをリモートリポジトリとして活用**したGit運用を学びます。単なる操作の暗記ではなく、実務で必ず直面する「ミスからの救済」や「衝突の解消」を体験することがゴールです。
+
+---
+
+## 1. 研修環境の全体像
+
+### ネットワーク構成
+*   **リモート（共有の箱）**: `//ServerName/Shared/git-repos/intro-project.git`
+*   **ローカル（自分の作業場）**: 各自のPC上の任意のフォルダ
+
+### 練習用リポジトリの構造
+```text
+intro-project/
+├── README.md            # 全員で編集するファイル（衝突体験用）
+├── .gitignore           # 管理除外設定（ゴミファイル対策）
+├── profiles/            # メンバーの作業フォルダ
+│   └── template.txt     # プロフィールのテンプレート
+└── docs/
+    └── manual.txt       # 共通ドキュメント（Stash練習用）
+2. 研修プログラム（全5ステップ）【ステップ1】環境構築：Clone（クローン）共有フォルダにある「箱」を自分のPCにコピーして、作業を開始できる状態にします。自分のPCの作業用フォルダでターミナルを開く。以下のコマンドを実行：Bashgit clone //ServerName/Shared/git-repos/intro-project.git
+intro-project フォルダが作成されていることを確認。【ステップ2】基本のサイクル：Add, Commit, Push自分のプロフィールを作成して、共有フォルダに保存します。作業: profiles/template.txt をコピーして profiles/名前.txt を作成し、中身を埋める。登録（Add）: git add .記録（Commit）: git commit -m "feat: 〇〇のプロフィールを追加"共有（Push）: git push origin main※もしエラーが出たら、誰かが先にPushしています。git pull origin main をしてから再度Pushしてください。【ステップ3】ブランチ操作と「作業場所間違い」の救済「main」を直接汚さず作業する習慣と、間違えた時のリカバリを学びます。正しい手順: git checkout -b feature/my-task で新ブランチを作って作業。レスキュー体験:あえて main ブランチのままファイルを編集する（コミットはしない）。「あ、ブランチ間違えた！」と気づいたら：Bashgit checkout -b feature/correct-branch-name
+学び: コミット前なら、未完了の変更を持ったまま新しいブランチへ移動できる。【ステップ4】Stash（一時退避）：割り込み対応作業を中断して、別の至急案件に対応するシミュレーションです。docs/manual.txt を適当に書き換える（書きかけの状態にする）。状況発生: 「至急 README.md のタイポを直して！」と指示が出る。退避: git stash で今の書きかけを隠す。対応: main 等で作業してPush。復帰: 元のブランチに戻り git stash pop で書きかけを戻す。【ステップ5】コンフリクト（衝突）の解消あえて「他人の変更」とぶつかる状況を作り、手動で解決します。下準備: 管理者が用意した衝突用ブランチをマージする。Bashgit merge origin/conflict-seed
+衝突発生: CONFLICT (content): Merge conflict in README.md と出るのを確認。解消作業:README.md をエディタで開く。<<<<<<< HEAD 等の記号を消し、最終的に残したい内容に書き換える。完了:Bashgit add README.md
+git commit -m "fix: コンフリクトを解消"
+3. 実務で役立つ「逆引き」トラブル対応困ったとき対処法直前のコミットに修正漏れがあったgit add . してから git commit --amend --no-edit間違えてログファイルをPushした.gitignore に追記し、git rm --cached ファイル名 を実行サーバー移設で共有パスが変わったgit remote set-url origin 新パス今どのブランチにいるか不明git branch または git status朝一番にやるべきことgit pull origin main（仲間の変更を取り込む）4. 管理者向け：事前セットアップ手順研修開始前に、管理者は以下の手順でリポジトリを作成してください。Bash# 1. 共有フォルダにベアリポジトリを作成
+cd /z/git-repos/
+mkdir intro-project.git
+cd intro-project.git
+git init --bare
+
+# 2. ローカルで初期データ作成
+mkdir project-init
+cd project-init
+git init
+# (README.md, .gitignore, profiles/template.txt, docs/manual.txt を作成)
+git add .
+git commit -m "Initial commit"
+
+# 3. コンフリクト用の「地雷」ブランチを作成
+git checkout -b conflict-seed
+# (README.md の特定の行を大幅に書き換える)
+git add .
+git commit -m "Conflict seed"
+git checkout main
+
+# 4. 全てを共有フォルダへPush
+git remote add origin //Server/Shared/git-repos/intro-project.git
+git push origin main
+git push origin conflict-seed
